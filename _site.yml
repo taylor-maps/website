@@ -1,0 +1,9 @@
+name: "website"
+output_dir: "docs"
+navbar:
+  title: "Website"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
