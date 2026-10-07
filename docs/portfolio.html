@@ -11,7 +11,7 @@
 
 
 
-<title>About This Website</title>
+<title>Portfolio</title>
 
 <script src="site_libs/header-attrs-2.32/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -29,7 +29,11 @@
        h6 {font-size: 12px;}
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
 
@@ -216,7 +220,73 @@ $(document).ready(function () {
 </style>
 
 <!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
 
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
 
 
 
@@ -226,6 +296,16 @@ $(document).ready(function () {
 
 
 <div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
 
 
 
@@ -261,17 +341,115 @@ $(document).ready(function () {
 
 <div id="header">
 
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
 
 
-<h1 class="title toc-ignore">About This Website</h1>
+
+<h1 class="title toc-ignore">Portfolio</h1>
 
 </div>
 
 
-<p>So much more to say.</p>
+<p>Sample projects from the Dashboards.</p>
+<div id="redlining-city-overlays" class="section level3">
+<h3>Redlining City Overlays</h3>
+<div id="project-goal" class="section level4">
+<h4>Project goal</h4>
+<p>Make interactive redlining maps available to City Health Dashboard
+users.</p>
+</div>
+<div id="my-role" class="section level4">
+<h4>My role</h4>
+<ul>
+<li>Literature review to assess relationship between redlining and
+health outcomes</li>
+<li>Explore geodata files and potential mapping options</li>
+<li>Proposal for integrating redlining into existing website</li>
+<li>R code to clean geodata files and intersect with city
+boundaries</li>
+<li>Collaboration with UX and communication teams to develop
+feature</li>
+<li><a
+href="https://www.cityhealthdashboard.com/blog-media/new-map-feature-redlining">Blog
+to announce and explain overlays</a></li>
+</ul>
+</div>
+<div id="sample-r-code" class="section level4">
+<h4>Sample R code</h4>
+<ul>
+<li>Select “Show” to view</li>
+</ul>
+<pre class="r"><code>#HOLC boundaries
+holc &lt;- read_sf(&quot;HOLC-Redlining\\Data\\mappinginequality.json&quot;) %&gt;%
+  #only keep boundaries from the original HOLC city survey, remove commercial and industrial areas
+  filter(city_survey == T &amp; commercial == F &amp; industrial == F &amp; grade != &quot;E&quot;) %&gt;%
+  #re-project to NAD83 to match internal files
+  st_transform(4269) %&gt;%
+  mutate(holc_area = units::drop_units(st_area(geometry)))
+
+#city boundaries
+city_file &lt;- dashboard_city_list %&gt;%
+  mutate(city_area = units::drop_units(st_area(geometry)))
+
+#identify cities with &gt;5% of the city covered by a HOLC grade
+  coverage_filter &lt;- st_intersection(city_file,holc) %&gt;%
+    group_by(geo_fips,geo_name,state_abbr,city_area) %&gt;%
+    summarise() %&gt;%
+    mutate(intersect_holc_full = units::drop_units(st_area(geometry)),
+           per_overlap_city = round(intersect_holc_full/city_area*100,1)) %&gt;%
+    filter(per_overlap_city &gt;= 5)
+
+#Intersect, apply filters
+intersect &lt;- st_intersection(city_file,holc) %&gt;%
+  #filter out &quot;sliver&quot; overlaps of graded areas that only barely overlap (&lt;10%)
+  mutate(intersect_area = units::drop_units(st_area(geometry)),
+         per_overlap_area = round(intersect_area/holc_area*100,1)) %&gt;%
+  filter(per_overlap_area &gt; 10) %&gt;%
+  #dissolve by city*grade for final maps
+  group_by(census_parent_shape_year,geo_fips,geo_level,geo_name,state_fips,state_name,state_abbr,grade) %&gt;%
+  summarise() %&gt;%
+  #select only cities that have sufficient holc coverage
+  filter(geo_fips %in% coverage_filter$geo_fips)</code></pre>
+</div>
+<div id="final-product" class="section level4">
+<h4>Final product</h4>
+<p><a
+href="https://www.cityhealthdashboard.com/IN/Indianapolis/metric-detail?metricId=6&amp;dataPeriod=2023&amp;focus=grade&amp;grade=A&amp;grade=B&amp;grade=C&amp;grade=D">Indianapolis
+Redlining Map</a></p>
+<pre class="r"><code>knitr::include_graphics(path = &quot;images\\redlining_indianapolis.png&quot;)</code></pre>
+<p><img src="images/redlining_indianapolis.png" alt="" width="400px" /></p>
+<!-- ## Congressional District Density Scale -->
+<!-- My role:  -->
+<!-- Final product: -->
+<!-- Sample code: -->
+<!-- ```{r pressure, echo=FALSE} -->
+<!-- plot(pressure) -->
+<!-- ``` -->
+</div>
+</div>
+<div id="customize-an-area-feature" class="section level3">
+<h3>Customize an Area Feature</h3>
+<div id="project-goal-1" class="section level4">
+<h4>Project goal</h4>
+</div>
+<div id="my-role-1" class="section level4">
+<h4>My role</h4>
+</div>
+</div>
+<div id="city-map-boundary-development" class="section level3">
+<h3>City Map Boundary Development</h3>
+</div>
 
 
 
+</div>
+</div>
 
 </div>
 
@@ -303,7 +481,41 @@ $(document).ready(function () {
 </script>
 
 <!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
 
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>

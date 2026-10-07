@@ -1,0 +1,107 @@
+---
+title: "Portfolio"
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+Sample projects from the Dashboards.
+
+```{r setup, include=FALSE}
+
+```
+
+
+### Redlining City Overlays
+
+#### Project goal
+
+Make interactive redlining maps available to City Health Dashboard users.
+
+#### My role
+
+* Literature review to assess relationship between redlining and health outcomes
+* Explore geodata files and potential mapping options
+* Proposal for integrating redlining into existing website
+* R code to clean geodata files and intersect with city boundaries
+* Collaboration with UX and communication teams to develop feature
+* [Blog to announce and explain overlays](https://www.cityhealthdashboard.com/blog-media/new-map-feature-redlining)
+
+#### Sample R code
+
+* Select "Show" to view
+
+```{r redlining, eval=FALSE}
+
+#HOLC boundaries
+holc <- read_sf("HOLC-Redlining\\Data\\mappinginequality.json") %>%
+  #only keep boundaries from the original HOLC city survey, remove commercial and industrial areas
+  filter(city_survey == T & commercial == F & industrial == F & grade != "E") %>%
+  #re-project to NAD83 to match internal files
+  st_transform(4269) %>%
+  mutate(holc_area = units::drop_units(st_area(geometry)))
+
+#city boundaries
+city_file <- dashboard_city_list %>%
+  mutate(city_area = units::drop_units(st_area(geometry)))
+
+#identify cities with >5% of the city covered by a HOLC grade
+  coverage_filter <- st_intersection(city_file,holc) %>%
+    group_by(geo_fips,geo_name,state_abbr,city_area) %>%
+    summarise() %>%
+    mutate(intersect_holc_full = units::drop_units(st_area(geometry)),
+           per_overlap_city = round(intersect_holc_full/city_area*100,1)) %>%
+    filter(per_overlap_city >= 5)
+
+#Intersect, apply filters
+intersect <- st_intersection(city_file,holc) %>%
+  #filter out "sliver" overlaps of graded areas that only barely overlap (<10%)
+  mutate(intersect_area = units::drop_units(st_area(geometry)),
+         per_overlap_area = round(intersect_area/holc_area*100,1)) %>%
+  filter(per_overlap_area > 10) %>%
+  #dissolve by city*grade for final maps
+  group_by(census_parent_shape_year,geo_fips,geo_level,geo_name,state_fips,state_name,state_abbr,grade) %>%
+  summarise() %>%
+  #select only cities that have sufficient holc coverage
+  filter(geo_fips %in% coverage_filter$geo_fips)
+
+```
+
+#### Final product
+
+[Indianapolis Redlining Map](https://www.cityhealthdashboard.com/IN/Indianapolis/metric-detail?metricId=6&dataPeriod=2023&focus=grade&grade=A&grade=B&grade=C&grade=D)
+
+```{r, out.width="400px", collapse=T}
+knitr::include_graphics(path = "images\\redlining_indianapolis.png")
+```
+
+
+<!-- ## Congressional District Density Scale -->
+
+<!-- My role:  -->
+
+<!-- Final product: -->
+
+<!-- Sample code: -->
+
+<!-- ```{r pressure, echo=FALSE} -->
+<!-- plot(pressure) -->
+<!-- ``` -->
+
+### Customize an Area Feature
+
+#### Project goal
+
+#### My role
+
+```{r}
+
+```
+
+### City Map Boundary Development
+
+```{r}
+
+```
